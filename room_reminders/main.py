@@ -5,8 +5,6 @@ import redis
 from datetime import datetime, timedelta
 from flask import Flask, json, render_template, request
 
-last_reminder_time = datetime.fromtimestamp(0)
-
 def build_app():
     app = Flask("Pipeline Notifier")
     app.debug = True
@@ -16,6 +14,7 @@ def build_app():
 
     redis_url = os.environ["REDISTOGO_URL"]
     redis_conn = redis.from_url(redis_url)
+    redis_conn.set('last_reminder_time', datetime.fromtimestamp(0))
 
     @app.route("/", methods=["GET"])
     def show_set_reminder():
@@ -29,8 +28,13 @@ def build_app():
       
     @app.route("/ping")
     def maybe_send_reminder():
-      global last_reminder_time
-      current_reminder = redis_conn.get('reminder')
+      try:
+        last_reminder_time = datetime.strptime(redis_conn.get('last_reminder_time').decode("UTF-8"), "%Y-%m-%d %H:%M:%S")
+        current_reminder = redis_conn.get('reminder')
+      except Exception as e:
+        print("Failed to get time and reminder from Redis: %s" % (e,))
+        current_reminder = None
+        last_reminder_time = None
             
       if (current_reminder and
           last_reminder_time + timedelta(days=1) <= datetime.now()):
