@@ -40,8 +40,8 @@ def build_app():
         last_reminder_time = None
 
       if (current_reminder and
-          last_reminder_time + timedelta(days=1) <= datetime.now()):
-        last_reminder_time = datetime.now()
+          last_reminder_time + timedelta(days=1) <= datetime.utcnow()):
+        redis_conn.set('last_reminder_time', datetime.utcnow())
       
         hipchatConn = hipchat.HipChat(token=hipchat_token)
         hipchatConn.method(url='rooms/message', method='POST', parameters={
