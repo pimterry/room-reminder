@@ -40,9 +40,7 @@ def build_app():
         last_reminder_time = None
 
       if (current_reminder and
-          last_reminder_time + timedelta(days=1) <= datetime.utcnow()):
-        redis_conn.set('last_reminder_time', datetime.utcnow())
-      
+          last_reminder_time + timedelta(days=1) <= datetime.utcnow()):     
         hipchatConn = hipchat.HipChat(token=hipchat_token)
         hipchatConn.method(url='rooms/message', method='POST', parameters={
             'room_id': hipchat_room,
@@ -52,7 +50,10 @@ def build_app():
             'color': 'purple',
             'message': current_reminder
         })
+
+        redis_conn.set('last_reminder_time', datetime.utcnow())        
         return "sent"
+
       return "no reminder set"
     
     return app
