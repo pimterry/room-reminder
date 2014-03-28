@@ -1,10 +1,10 @@
 import os
 import cherrypy
 import hipchat
+import redis
 from datetime import datetime, timedelta
 from flask import Flask, json, render_template, request
 
-current_reminder = None
 last_reminder_time = datetime.fromtimestamp(0)
 
 def build_app():
@@ -14,19 +14,23 @@ def build_app():
     hipchat_token = os.environ["HIPCHAT_TOKEN"]
     hipchat_room = os.environ["HIPCHAT_ROOM"]
 
+    redis_url = os.environ["REDISTOGO_URL"]
+    redis_conn = redis.from_url(redis_url)
+
     @app.route("/", methods=["GET"])
     def show_set_reminder():
       return render_template("set-reminder.html")
-      
+
     @app.route("/", methods=["POST"])
     def actually_set_reminder():
-      global current_reminder
       current_reminder = request.form['reminder']
+      redis_conn.set('reminder', current_reminder)
       return render_template("set-reminder.html")
       
     @app.route("/ping")
     def maybe_send_reminder():
-      global current_reminder, last_reminder_time
+      global last_reminder_time
+      current_reminder = redis_conn.get('reminder')
             
       if (current_reminder and
           last_reminder_time + timedelta(days=1) <= datetime.now()):
