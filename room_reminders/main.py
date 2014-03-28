@@ -1,33 +1,37 @@
 import os
 import cherrypy
 import hipchat
+from datetime import datetime, timedelta
 from flask import Flask, json, render_template, request
+
+current_reminder = None
+last_reminder_time = datetime.fromtimestamp(0)
 
 def build_app():
     app = Flask("Pipeline Notifier")
     app.debug = True
-    current_reminder = None
 
     hipchat_token = os.environ["HIPCHAT_TOKEN"]
     hipchat_room = os.environ["HIPCHAT_ROOM"]
 
     @app.route("/", methods=["GET"])
     def show_set_reminder():
-      print("show")
       return render_template("set-reminder.html")
       
     @app.route("/", methods=["POST"])
     def actually_set_reminder():
       global current_reminder
-      print("set")
       current_reminder = request.form['reminder']
       return render_template("set-reminder.html")
       
     @app.route("/ping")
     def maybe_send_reminder():
-      global current_reminder
+      global current_reminder, last_reminder_time
+            
+      if (current_reminder and
+          last_reminder_time + timedelta(days=1) <= datetime.now()):
+        last_reminder_time = datetime.now()
       
-      if current_reminder:
         hipchatConn = hipchat.HipChat(token=hipchat_token)
         hipchatConn.method(url='rooms/message', method='POST', parameters={
             'room_id': hipchat_room,
@@ -39,7 +43,6 @@ def build_app():
         })
         return "sent"
       return "no reminder set"
-        
     
     return app
 
