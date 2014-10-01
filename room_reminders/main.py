@@ -9,7 +9,7 @@ from flask import Flask, json, render_template, request, abort
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 def build_app():
-    app = Flask("Pipeline Notifier")
+    app = Flask("Room reminder")
     app.debug = True
 
     hipchat_token = os.environ["HIPCHAT_TOKEN"]
